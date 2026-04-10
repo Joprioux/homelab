@@ -120,8 +120,8 @@ Proxmox VE
 * ✅ **Pas de conteneurs privilégiés** — tous les conteneurs LXC/Docker tournent sans privilèges
 * ✅ **Secrets gérés via Vaultwarden** — aucune credential en clair dans les fichiers de configuration
 
-> Toutes les valeurs sensibles (IPs, credentials, certificats) sont exclues de ce dépôt.
-> Voir [`.env.example`](.env.example) pour les variables d'environnement attendues.
+> Toutes les valeurs sensibles (IPs, credentials, certificats) sont exclues de ce dépôt par le biais d'un git ignore
+
 
 ---
 
