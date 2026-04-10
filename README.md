@@ -143,8 +143,6 @@ Proxmox VE
 | Infra | Terraform IaC pour le provisionnement LXC (security as code) | Haute |
 | Infra | Migration Portainer → Dockhand | Moyenne |
 | Observabilité | Déploiement stack Prometheus + Grafana | Haute |
-| Observabilité | Uptime Kuma pour la disponibilité des services | Haute |
-| Observabilité | Loki + Promtail pour l'agrégation des logs | Moyenne |
 | Sécurité | Migration TLS vers Let's Encrypt (remplacement Home-CA) | Moyenne |
 | Automatisation | Ansible pour la config Traefik + onboarding des hôtes | Moyenne |
 | Infra | Introduire des workloads Kubernetes (cas d'usage à définir) | Basse |
