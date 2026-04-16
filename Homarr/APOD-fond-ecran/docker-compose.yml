@@ -1,0 +1,9 @@
+services:
+  apod-wallpaper:
+    build: .
+    container_name: apod-wallpaper
+    restart: unless-stopped
+    environment:
+      NASA_API_KEY: "${NASA_API_KEY}"
+    ports:
+      - "8088:80"
