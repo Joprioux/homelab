@@ -19,6 +19,7 @@ Petit repo pour utiliser l'image du jour de la NASA APOD comme fond dans Homarr.
 .
 ├── .env.example
 ├── Dockerfile
+├── CSS-personnalisé.css
 ├── docker-compose.yml
 ├── README.md
 └── scripts
