@@ -80,7 +80,7 @@ crontab -e
 Ajouter :
 
 ```cron
-5 6 * * * docker exec apod-wallpaper /update-apod.sh >> /home/jo/apod-wallpaper/apod-update.log 2>&1
+5 6 * * * docker exec apod-wallpaper /update-apod.sh >> /home/x/apod-wallpaper/apod-update.log 2>&1
 ```
 
 ## Dans Homarr
