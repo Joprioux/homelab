@@ -1,0 +1,36 @@
+# ── Secrets / Variables d'environnement ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.env
+
+# Garder uniquement les exemples
+!.env.example
+
+# ── Données persistantes (volumes montés localement) ─────────────────────────
+vw-data/
+homarr/appdata/
+prometheus/data/
+grafana/data/
+immich/upload/
+mariadb/data/
+postgres/data/
+
+# ── Certificats et clés ──────────────────────────────────────────────────────
+*.pem
+*.key
+*.crt
+*.p12
+certs/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── OS & éditeurs ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

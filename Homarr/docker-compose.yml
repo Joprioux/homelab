@@ -1,0 +1,21 @@
+---
+# ─────────────────────────────────────────────────────────────────────────────
+# LXC : homarr  |  IP : 10.0.0.54
+# Service : Homarr — Dashboard central
+# Intégrations actives : Nextcloud, Proxmox, Immich
+# Fond d'écran : image NASA APOD quotidienne (voir ../apod)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  homarr:
+    image: ghcr.io/homarr-labs/homarr:latest
+    container_name: homarr
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./homarr/appdata:/appdata
+    environment:
+      - SECRET_ENCRYPTION_KEY=${SECRET_ENCRYPTION_KEY}
+    ports:
+      - "7575:7575"

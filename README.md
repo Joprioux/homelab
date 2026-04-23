@@ -1,240 +1,163 @@
-# 🏠 HomeLab
+# HomeLab
 
-Homelab personnel tournant sur un serveur unique — services auto-hébergés, infrastructure as code, et apprentissage continu.
-
----
-
-## 🎯 Pourquoi ce projet ?
-
-Ce homelab est né de deux envies qui se rejoignent naturellement : **mettre en pratique mes cours** d'infrastructure et de systèmes, et **concrétiser ma passion pour la photographie**.
-
-Plutôt que de travailler sur des exercices abstraits, j'ai préféré construire quelque chose de réel, qui pourrait un jour me servir professionnellement. L'idée à terme : **monter mon auto-entreprise de photographie** et disposer d'une plateforme entièrement auto-hébergée pour **livrer les photos à mes clients** — sans dépendre de services tiers, avec une maîtrise totale de mes données et de mon image de marque.
-
-Ce projet est donc à la fois un terrain d'entraînement technique et la première brique d'une infrastructure pro future.
+Dépôt de référence de mon homelab personnel, hébergé sur Proxmox et organisé en conteneurs LXC Docker.  
+L'objectif est de maintenir une infrastructure reproductible, documentée et orientée bonnes pratiques DevOps.
 
 ---
 
-## 📋 Table des matières
-
-* [Matériel](#%EF%B8%8F-matériel)
-* [Architecture](#%EF%B8%8F-architecture)
-* [Services](#-services)
-* [Réseau & Sécurité](#-réseau--sécurité)
-* [Stockage](#-stockage)
-* [Feuille de route](#%EF%B8%8F-feuille-de-route)
-* [Commandes utiles](#-commandes-utiles)
-
----
-
-## 🖥️ Matériel
-
-**Lenovo ThinkServer TS150**
-
-| Composant | Détails |
-| --- | --- |
-| CPU | Intel Xeon E3-1230v6 — 4 cœurs / 8 threads @ 3,5 GHz (boost 3,9 GHz) |
-| RAM | 16 Go DDR4 ECC |
-| Stockage | 2× 1 To HDD (RAID 1) + 1× 1 To HDD + 1× 500 Go SSD |
-| Réseau | 2× Gigabit Ethernet |
-| Hyperviseur | **Proxmox VE** |
-
----
-
-## 🏗️ Architecture
-
-Toutes les charges de travail tournent sur **Proxmox VE**, sous forme de VMs et de conteneurs LXC.
+## Architecture globale
 
 ```
-Proxmox VE
-├── VM  – pfSense            (Pare-feu / VPN / DynDNS)
-├── LXC – docker-infra       (Traefik · Vaultwarden · Home-CA)
-├── LXC – docker-prod-photo  (WordPress · Immich)
-├── LXC – nextcloud          (Nextcloud)
-├── LXC – homarr             (Tableau de bord)
-├── LXC – docker-portainer   (Portainer → migration Dockhand)
-├── LXC – supervision        (Prometheus · Grafana — en cours)
-└── VM  – k3s-dev            (Environnement de développement Kubernetes)
+Proxmox (bare-metal)
+├── pfSense (VM)              → Firewall / VPN / DynDNS     — 10.0.0.1
+├── LXC docker-infra          → Traefik + Vaultwarden        — 10.0.0.51
+├── LXC nextcloud             → Nextcloud                    — 10.0.0.52
+├── LXC docker-prod-photo     → WordPress + Immich           — 10.0.0.53
+├── LXC homarr                → Homarr dashboard + APOD      — 10.0.0.54
+├── LXC supervision           → Prometheus + Grafana         — 10.0.0.60
+└── VM k3s-dev                → Kubernetes (test)            — 10.0.0.100
 ```
 
-**Pools de stockage (ZFS)**
-
-| Pool | Utilisé par |
-| --- | --- |
-| `zfs-vms` | docker-prod-photo, nextcloud |
-| `zfs-infra` | docker-infra, homarr, supervision |
+Tous les services sont **LAN only** (aucune exposition WAN) et accessibles via Traefik avec TLS signé par une CA interne (Home-CA).
 
 ---
 
-## 🚀 Services
+## Structure du dépôt
 
-### Infra (`docker-infra`)
+```
+homelab/
+├── docker-infra/
+│   ├── traefik/              → Reverse proxy LAN + TLS
+│   └── vaultwarden/          → Password manager (compatible Bitwarden)
+├── docker-prod-photo/        → WordPress (MariaDB) + Immich (PostgreSQL + Redis)
+├── nextcloud/                → Nextcloud (MariaDB + Redis)
+├── homarr/
+│   ├── docker-compose.yml    → Dashboard central
+│   └── apod/                 → Fond d'écran NASA APOD (Nginx + script cron)
+├── supervision/              → Prometheus + Grafana + Blackbox Exporter
+└── .gitignore
+```
 
-| Service | Rôle |
-| --- | --- |
-| **Traefik** | Reverse proxy — HTTPS LAN avec TLS |
-| **Vaultwarden** | Gestionnaire de mots de passe auto-hébergé (compatible Bitwarden) |
-| **Home-CA** | Autorité de certification interne |
-
-### Photo & Médias (`docker-prod-photo`)
-
-| Service | Stack | Notes |
-| --- | --- | --- |
-| **Immich** | PostgreSQL (pgvecto-rs) + Redis | Sauvegarde photos/vidéos auto-hébergée |
-| **WordPress** | MariaDB | Blog photo personnel |
-
-### Cloud (`nextcloud`)
-
-| Service | Stack |
-| --- | --- |
-| **Nextcloud** | MariaDB + Redis |
-
-### Tableau de bord (`homarr`)
-
-| Service | Notes |
-| --- | --- |
-| **Homarr** | Dashboard central — intègre Nextcloud, Proxmox, Immich |
-
-### Supervision (`supervision` — en cours)
-
-| Service | Rôle |
-| --- | --- |
-| **Prometheus** | Collecte de métriques |
-| **Grafana** | Visualisation |
-
-### Kubernetes (`k3s-dev`)
-
-| Composant | Détails |
-| --- | --- |
-| **k3s** | Kubernetes léger — environnement de dev/test |
-| **Traefik** | Contrôleur Ingress (inclus) |
-| **Provisionnement** | Terraform (provider bpg/proxmox) + Ansible |
+Chaque stack contient :
+- `docker-compose.yml` — définition des services (secrets externalisés via `.env`)
+- `.env.example` — template des variables d'environnement (à copier en `.env`)
 
 ---
 
-## 🔐 Réseau & Sécurité
-
-* ✅ **Aucune exposition WAN** — tous les services sont en LAN uniquement (pas de NAT entrant)
-* ✅ **pfSense** — pare-feu, VPN (WireGuard), DynDNS
-* ✅ **TLS partout** — CA interne (`Home-CA`) signe tous les certificats LAN
-* ✅ **SSH par clé uniquement** — connexion root désactivée, un seul utilisateur admin
-* ✅ **Pas de conteneurs privilégiés** — tous les conteneurs LXC/Docker tournent sans privilèges
-* ✅ **Secrets gérés via Vaultwarden** — aucune credential en clair dans les fichiers de configuration
-
-> Toutes les valeurs sensibles (IPs, credentials, certificats) sont exclues de ce dépôt par le biais d'un git ignore
-
-
----
-
-## 💾 Stockage
-
-* **ZFS RAID-1** (`zfs-vms`) — données des VMs et conteneurs
-* **ZFS** (`zfs-infra`) — services d'infrastructure
-* **Snapshots Proxmox** — snapshots automatisés réguliers de tous les LXC et VMs
-* Les chemins critiques sont documentés et inclus dans les politiques de snapshot
-
----
-
-## 🗺️ Feuille de route
-
-> Suivi dans le backlog Notion privé. Principaux éléments à venir :
-
-| Domaine | Élément | Priorité |
-| --- | --- | --- |
-| Infra | Terraform IaC pour le provisionnement LXC (security as code) | Haute |
-| Infra | Migration Portainer → Dockhand | Moyenne |
-| Observabilité | Déploiement stack Prometheus + Grafana | Haute |
-| Sécurité | Migration TLS vers Let's Encrypt (remplacement Home-CA) | Moyenne |
-| Automatisation | Ansible pour la config Traefik + onboarding des hôtes | Moyenne |
-| Infra | Introduire des workloads Kubernetes (cas d'usage à définir) | Basse |
-
----
-
-## ⚡ Commandes utiles
-
-### Docker
+## Déploiement d'une stack
 
 ```bash
-# Suivre les logs (tous les services)
-docker compose logs -f
+# 1. Copier le template de variables
+cp .env.example .env
 
-# Suivre les logs d'un service spécifique
-docker compose logs -f <service>
+# 2. Renseigner les valeurs dans .env
+nano .env
 
-# Redémarrer les services
-docker compose restart
-
-# Arrêter / démarrer
-docker compose down
+# 3. Démarrer la stack
 docker compose up -d
 
-# Nettoyer les conteneurs arrêtés et images inutilisées
-docker system prune -a
-
-# Utilisation du disque
-docker system df
-```
-
-### VPN WireGuard
-
-```bash
-# Activer le VPN
-sudo wg-quick up wg0
-
-# Désactiver le VPN
-sudo wg-quick down wg0
-```
-
-### Traefik — ajouter un nouveau service
-
-Ajouter ces labels dans ton `docker-compose.yml` :
-
-```yaml
-services:
-  myapp:
-    image: myapp:latest
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.myapp.rule=Host(`myapp.home.local`)"
-      - "traefik.http.routers.myapp.entrypoints=websecure"
-      - "traefik.http.routers.myapp.tls=true"
-    networks:
-      - web
-
-networks:
-  web:
-    external: true
+# 4. Vérifier l'état des conteneurs
+docker compose ps
 ```
 
 ---
 
-## 📅 Maintenance
+## Gestion des secrets
 
-### Hebdomadaire (~10 min)
+Les credentials ne sont **jamais** committés. Chaque stack utilise un fichier `.env` local (gitignored).  
+Un fichier `.env.example` est fourni dans chaque dossier pour documenter les variables attendues.
 
-* Vérifier l'état global de Proxmox (CPU / RAM / stockage)
-* Contrôler les services critiques (Traefik, Vaultwarden, Nextcloud)
-* Consulter les logs récents (Traefik / pfSense)
-
-### Mensuelle
-
-* Mettre à jour les systèmes de base des LXC (`apt update && apt upgrade`)
-* Tirer les nouvelles images Docker + redémarrage contrôlé
-* Vérifier la validité des certificats (Home-CA)
-* Contrôler les snapshots Proxmox + capacité disque
 
 ---
 
-## 🛠️ Stack en un coup d'œil
+## Stacks
 
-[![Proxmox](https://img.shields.io/badge/Proxmox-E57000?style=flat&logo=proxmox&logoColor=white)](https://www.proxmox.com)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)](https://www.docker.com)
-[![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=flat&logo=traefikproxy&logoColor=white)](https://traefik.io)
-[![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=flat&logo=nextcloud&logoColor=white)](https://nextcloud.com)
-[![Kubernetes](https://img.shields.io/badge/k3s-FFC61C?style=flat&logo=kubernetes&logoColor=black)](https://k3s.io)
-[![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io)
-[![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=flat&logo=ansible&logoColor=white)](https://www.ansible.com)
-[![pfSense](https://img.shields.io/badge/pfSense-212121?style=flat&logo=pfsense&logoColor=white)](https://www.pfsense.org)
+### `docker-infra` — LXC 10.0.0.51
+
+| Service      | Image                    | Port | Rôle                            |
+|--------------|--------------------------|------|---------------------------------|
+| Traefik      | `traefik:latest`         | 80/443 | Reverse proxy LAN + TLS       |
+| Vaultwarden  | `vaultwarden/server`     | 8000 | Password manager self-hosted   |
+
+Config Traefik attendue sur l'hôte sous `/opt/traefik/` (non versionné — contient les certs).
 
 ---
 
-*Dernière mise à jour : mars 2026*
+### `docker-prod-photo` — LXC 10.0.0.53
+
+| Service                   | Image                            | Port | Rôle                        |
+|---------------------------|----------------------------------|------|-----------------------------|
+| WordPress                 | `wordpress:latest`               | 8080 | Site photo                  |
+| MariaDB                   | `mariadb:latest`                 | —    | BDD WordPress               |
+| Immich Server             | `immich-app/immich-server`       | 2342 | Gestion médiathèque photo   |
+| Immich Machine Learning   | `immich-app/immich-machine-learning` | — | Reconnaissance faciale/IA  |
+| PostgreSQL (pgvecto-rs)   | `tensorchord/pgvecto-rs:pg16`    | —    | BDD Immich                  |
+| Redis                     | `redis:latest`                   | —    | Cache Immich                |
+
+---
+
+### `nextcloud` — LXC 10.0.0.52
+
+| Service    | Image              | Port | Rôle                  |
+|------------|--------------------|------|-----------------------|
+| Nextcloud  | `nextcloud:latest` | 8080 | Cloud personnel       |
+| MariaDB    | `mariadb:10.11`    | —    | BDD Nextcloud         |
+| Redis      | `redis:alpine`     | —    | Cache session         |
+
+---
+
+### `homarr` — LXC 10.0.0.54
+
+| Service | Image                            | Port | Rôle                             |
+|---------|----------------------------------|------|----------------------------------|
+| Homarr  | `ghcr.io/homarr-labs/homarr`    | 7575 | Dashboard central des services   |
+| APOD    | `nginx` + script cron            | 8088 | Fond d'écran NASA APOD quotidien |
+
+Intégrations actives : Nextcloud · Proxmox · Immich
+
+---
+
+### `supervision` — LXC 10.0.0.60
+
+| Service           | Image                        | Port | Rôle                          |
+|-------------------|------------------------------|------|-------------------------------|
+| Prometheus        | `prom/prometheus`            | 9090 | Collecte métriques            |
+| Grafana           | `grafana/grafana`            | 3000 | Visualisation + alerting      |
+| Blackbox Exporter | `prom/blackbox-exporter`     | 9115 | Supervision uptime services   |
+
+Accessible via Traefik : `https://grafana.home` · `https://prometheus.home`
+
+---
+
+## Sécurité
+
+- Aucun service exposé sur le WAN
+- Pas de NAT entrant / port forwarding
+- TLS sur tous les services (certificats Home-CA)
+- SSH par clé uniquement, accès root désactivé
+- Conteneurs non-privilégiés
+- Secrets externalisés (jamais en dur dans les compose)
+
+---
+
+## Observabilité
+
+- **Prometheus** — métriques système et services
+- **Grafana** — dashboards et alerting
+- **Blackbox Exporter** — health check HTTP/TCP
+- **Logs** — consultables via `docker compose logs -f <service>`
+
+---
+
+## Stack technique
+
+![Proxmox](https://img.shields.io/badge/Proxmox-E57000?style=flat&logo=proxmox&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=flat&logo=traefikproxy&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat&logo=grafana&logoColor=white)
+![Nextcloud](https://img.shields.io/badge/Nextcloud-0082C9?style=flat&logo=nextcloud&logoColor=white)
+
+---
+
+*Homelab en évolution continue — K8S (quand la ram sera moins chère 🥸), Terraform et Ansible en développement*

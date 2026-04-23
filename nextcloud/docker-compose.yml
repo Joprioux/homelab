@@ -1,0 +1,43 @@
+---
+# ─────────────────────────────────────────────────────────────────────────────
+# LXC : nextcloud  |  IP : 10.0.0.52
+# Services : Nextcloud (MariaDB + Redis)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    depends_on:
+      - mariadb
+      - redis
+    environment:
+      MYSQL_HOST: mariadb
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis
+    ports:
+      - "8080:80"
+
+volumes:
+  mariadb_data:
