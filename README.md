@@ -9,13 +9,13 @@ L'objectif est de maintenir une infrastructure reproductible, documentée et ori
 
 ```
 Proxmox (bare-metal)
-├── pfSense (VM)              → Firewall / VPN / DynDNS     — 10.0.0.1
-├── LXC docker-infra          → Traefik + Vaultwarden        — 10.0.0.51
-├── LXC nextcloud             → Nextcloud                    — 10.0.0.52
-├── LXC docker-prod-photo     → WordPress + Immich           — 10.0.0.53
-├── LXC homarr                → Homarr dashboard + APOD      — 10.0.0.54
-├── LXC supervision           → Prometheus + Grafana         — 10.0.0.60
-└── VM k3s-dev                → Kubernetes (test)            — 10.0.0.100
+├── pfSense (VM)              -> Firewall / VPN / DynDNS      — 10.0.0.1
+├── LXC docker-infra          -> Traefik + Vaultwarden        — 10.0.0.51
+├── LXC nextcloud             -> Nextcloud                    — 10.0.0.52
+├── LXC docker-prod-photo     -> Immich + autres              — 10.0.0.53
+├── LXC homarr                -> Homarr dashboard + APOD      — 10.0.0.54
+├── LXC supervision           -> Prometheus + Grafana         — 10.0.0.60
+└── VM k3s-dev                -> Kubernetes (machine de test) — 10.0.0.100
 ```
 
 Tous les services sont **LAN only** (aucune exposition WAN) et accessibles via Traefik avec TLS signé par une CA interne (Home-CA).
@@ -27,14 +27,14 @@ Tous les services sont **LAN only** (aucune exposition WAN) et accessibles via T
 ```
 homelab/
 ├── docker-infra/
-│   ├── traefik/              → Reverse proxy LAN + TLS
-│   └── vaultwarden/          → Password manager (compatible Bitwarden)
-├── docker-prod-photo/        → WordPress (MariaDB) + Immich (PostgreSQL + Redis)
-├── nextcloud/                → Nextcloud (MariaDB + Redis)
+│   ├── traefik/              -> Reverse proxy LAN + TLS
+│   └── vaultwarden/          -> Password manager (compatible Bitwarden)
+├── docker-prod-photo/        -> Immich (PostgreSQL + Redis)
+├── nextcloud/                -> Nextcloud (MariaDB + Redis)
 ├── homarr/
-│   ├── docker-compose.yml    → Dashboard central
-│   └── apod/                 → Fond d'écran NASA APOD (Nginx + script cron)
-├── supervision/              → Prometheus + Grafana + Blackbox Exporter
+│   ├── docker-compose.yml    -> Dashboard central
+│   └── apod/                 -> Fond d'écran NASA APOD (Nginx + script cron)
+├── supervision/              -> Prometheus + Grafana + Blackbox Exporter
 └── .gitignore
 ```
 
@@ -87,8 +87,6 @@ Config Traefik attendue sur l'hôte sous `/opt/traefik/` (non versionné — con
 
 | Service                   | Image                            | Port | Rôle                        |
 |---------------------------|----------------------------------|------|-----------------------------|
-| WordPress                 | `wordpress:latest`               | 8080 | Site photo                  |
-| MariaDB                   | `mariadb:latest`                 | —    | BDD WordPress               |
 | Immich Server             | `immich-app/immich-server`       | 2342 | Gestion médiathèque photo   |
 | Immich Machine Learning   | `immich-app/immich-machine-learning` | — | Reconnaissance faciale/IA  |
 | PostgreSQL (pgvecto-rs)   | `tensorchord/pgvecto-rs:pg16`    | —    | BDD Immich                  |
