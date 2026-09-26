@@ -5,37 +5,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
-
-  # ── WordPress ───────────────────────────────────────────────────────────────
-  mariadb:
-    image: mariadb:latest
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    volumes:
-      - mariadb_data:/var/lib/mysql
-    networks:
-      - photonet
-
-  wordpress:
-    image: wordpress:latest
-    restart: always
-    depends_on:
-      - mariadb
-    environment:
-      WORDPRESS_DB_HOST: mariadb:3306
-      WORDPRESS_DB_USER: ${MYSQL_USER}
-      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
-      WORDPRESS_DB_NAME: ${MYSQL_DATABASE}
-      WORDPRESS_SSL_MODE: DISABLED
-    ports:
-      - "8080:80"
-    networks:
-      - photonet
-
   # ── Immich ───────────────────────────────────────────────────────────────────
   postgres:
     image: tensorchord/pgvecto-rs:pg16-v0.3.0
